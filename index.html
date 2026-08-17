@@ -4,16 +4,25 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <title>THUGGERMON — pocket monster disco</title>
-    <meta
-      name="description"
-      content="A 24/7 disco for pocket monsters with no manners. Ten Pikachu on the floor, one on the decks, and a mirror ball that has never once been switched off."
-    />
+    <meta name="description" content="on foenem, misty trippin." />
     <link rel="icon" type="image/png" href="/brand/favicon.png" />
     <link rel="apple-touch-icon" href="/brand/favicon.png" />
+
+    <!-- Social share card. og:image must be an ABSOLUTE url — X and most other
+         scrapers will not resolve a relative one, and you get a card with no
+         image. VITE_SITE_URL is substituted at build time from .env. -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="THUGGERMON" />
     <meta property="og:title" content="THUGGERMON" />
-    <meta property="og:description" content="A 24/7 disco for pocket monsters with no manners." />
-    <meta property="og:image" content="/brand/logo.png" />
+    <meta property="og:description" content="on foenem, misty trippin." />
+    <meta property="og:url" content="%VITE_SITE_URL%/" />
+    <meta property="og:image" content="%VITE_SITE_URL%/brand/og.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
     <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="THUGGERMON" />
+    <meta name="twitter:description" content="on foenem, misty trippin." />
+    <meta name="twitter:image" content="%VITE_SITE_URL%/brand/og.png" />
     <link rel="preload" as="image" href="/brand/logo.webp" type="image/webp" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />

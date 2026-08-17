@@ -55,7 +55,27 @@ await sharp(trimmed)
   .png()
   .toFile(path.join(outBrand, 'favicon.png'));
 
-for (const f of ['logo.webp', 'logo.png', 'favicon.png']) {
+/**
+ * Share card. Social scrapers want a fixed 1.91:1 image — handing them the bare
+ * wordmark (3:1, transparent) gets letterboxed against whatever background the
+ * client picks, which for a transparent PNG is often white. So compose it onto
+ * the club's own background at the exact size X and friends expect.
+ */
+const OG_W = 1200;
+const OG_H = 630;
+const logoOnCard = await sharp(trimmed).resize({ width: 940 }).toBuffer();
+const logoMeta = await sharp(logoOnCard).metadata();
+
+await sharp({
+  create: { width: OG_W, height: OG_H, channels: 4, background: { r: 10, g: 6, b: 22, alpha: 1 } },
+})
+  .composite([
+    { input: logoOnCard, left: Math.round((OG_W - logoMeta.width) / 2), top: Math.round((OG_H - logoMeta.height) / 2) },
+  ])
+  .png({ compressionLevel: 9 })
+  .toFile(path.join(outBrand, 'og.png'));
+
+for (const f of ['logo.webp', 'logo.png', 'favicon.png', 'og.png']) {
   console.log(`brand/${f}: ${kb((await fs.stat(path.join(outBrand, f))).size)}`);
 }
 console.log(`logo trimmed to ${meta.width}x${meta.height}`);
