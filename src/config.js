@@ -103,5 +103,7 @@ export const TOKEN = {
 };
 
 export const SOCIAL = {
-  x: 'https://x.com/thuggermon',
+  x: 'https://x.com/Thuggermon',
+  /** Handle, used for the twitter: card attribution tags in index.html. */
+  xHandle: '@Thuggermon',
 };
