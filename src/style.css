@@ -86,8 +86,75 @@ body.kick::before {
   z-index: 100;
   display: grid;
   place-items: center;
-  background: radial-gradient(ellipse at 50% 55%, #150c2b 0%, #05030d 70%);
+  overflow: hidden;
+  background: radial-gradient(ellipse at 50% 50%, #120a26 0%, #05030d 62%, #01000a 100%);
   transition: opacity 0.8s ease, transform 0.8s ease;
+}
+.boot-inner {
+  position: relative;
+  z-index: 2;
+}
+
+/* ------------------------------------------------------------- starfield */
+
+.sky {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Deep-space colour wash. Sits under the stars and breathes very slowly. */
+.nebula {
+  position: absolute;
+  inset: -25%;
+  background: radial-gradient(38% 32% at 24% 30%, rgba(59, 76, 202, 0.45), transparent 70%),
+    radial-gradient(34% 28% at 76% 66%, rgba(255, 61, 190, 0.28), transparent 70%),
+    radial-gradient(46% 38% at 62% 16%, rgba(53, 224, 255, 0.16), transparent 70%),
+    radial-gradient(30% 26% at 40% 82%, rgba(255, 203, 5, 0.1), transparent 70%);
+  filter: blur(30px);
+  animation: nebula 72s ease-in-out infinite alternate;
+}
+@keyframes nebula {
+  to {
+    transform: translate3d(2.5%, -2.5%, 0) scale(1.1);
+  }
+}
+
+/* One layer per depth. The parallax offset lands here... */
+.sky-layer {
+  position: absolute;
+  inset: 0;
+  transform: translate3d(
+    calc(var(--px, 0px) * var(--depth)),
+    calc(var(--py, 0px) * var(--depth)),
+    0
+  );
+  transition: transform 0.9s cubic-bezier(0.2, 0.9, 0.2, 1);
+}
+
+/* ...and the endless drift here, so the two don't fight over `transform`. */
+.sky-drift {
+  position: absolute;
+  inset: 0;
+  animation-name: skydrift;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+  will-change: transform;
+}
+.sky-drift i {
+  position: absolute;
+  left: 0;
+  top: 0;
+  border-radius: 50%;
+  /* the element itself is invisible — every star is one of its box-shadows */
+  background: transparent;
+}
+@keyframes skydrift {
+  to {
+    transform: translateY(-1400px);
+  }
 }
 #boot.is-gone {
   opacity: 0;
@@ -372,8 +439,14 @@ body.is-muted .wave {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .boot-ball {
+  .boot-ball,
+  .sky-drift,
+  .nebula {
     animation: none;
+  }
+  .sky-layer {
+    transition: none;
+    transform: none;
   }
   .reveal {
     transition-duration: 0.01s;

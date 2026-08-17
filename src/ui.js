@@ -1,4 +1,5 @@
 import { COPY, SOCIAL, TOKEN, UI_REVEAL_AT } from './config.js';
+import { createStarfield } from './starfield.js';
 
 const el = (tag, cls, html) => {
   const n = document.createElement(tag);
@@ -38,6 +39,7 @@ export function createUI() {
   const boot = document.getElementById('boot');
   const bootBtn = boot.querySelector('.boot-btn');
   const bootStatus = boot.querySelector('.boot-status');
+  const sky = createStarfield(boot);
 
   // Official wordmark. <picture> keeps a PNG fallback for the handful of
   // clients that still don't take webp; alt carries the name for screen readers.
@@ -135,7 +137,10 @@ export function createUI() {
         'click',
         () => {
           boot.classList.add('is-gone');
-          setTimeout(() => (boot.style.display = 'none'), 900);
+          setTimeout(() => {
+            boot.style.display = 'none';
+            sky.destroy(); // stop animating a screen nobody can see
+          }, 900);
           onStart();
         },
         { once: true }
