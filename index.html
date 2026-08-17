@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>THUGGERMON — pocket monster disco</title>
+    <meta
+      name="description"
+      content="A 24/7 disco for pocket monsters with no manners. Ten Pikachu on the floor, one on the decks, and a mirror ball that has never once been switched off."
+    />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Press+Start+2P&family=Space+Grotesk:wght@400;500;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/src/style.css" />
+  </head>
+  <body>
+    <canvas id="stage"></canvas>
+
+    <!-- The gate. Audio needs a gesture anyway, so we may as well make an
+         entrance out of it. -->
+    <div id="boot">
+      <div class="boot-inner">
+        <div class="boot-ball" aria-hidden="true"><i></i></div>
+        <p class="boot-status">loading the crew…</p>
+        <button class="boot-btn" disabled>ENTER THE PARTY</button>
+        <p class="boot-note">sound on, obviously</p>
+      </div>
+    </div>
+
+    <!-- Populated from src/config.js so the copy lives in one place. -->
+    <div id="ui"></div>
+
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>

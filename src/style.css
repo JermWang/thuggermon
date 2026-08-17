@@ -1,0 +1,384 @@
+/* ---------------------------------------------------------------- tokens */
+
+:root {
+  --yellow: #ffcb05;
+  --red: #ee1515;
+  --blue: #3b4cca;
+  --cyan: #35e0ff;
+  --ink: #0a0616;
+  --paper: #fdfbf3;
+
+  /* the glass recipe, in one place */
+  --glass-bg: rgba(255, 255, 255, 0.07);
+  --glass-bg-hover: rgba(255, 255, 255, 0.13);
+  --glass-edge: rgba(255, 255, 255, 0.22);
+  --glass-blur: blur(18px) saturate(160%);
+
+  --font-display: 'Archivo Black', 'Arial Black', system-ui, sans-serif;
+  --font-pixel: 'Press Start 2P', ui-monospace, 'Courier New', monospace;
+  --font-body: 'Space Grotesk', ui-sans-serif, system-ui, sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  height: 100%;
+  background: #05030d;
+  color: var(--paper);
+  font-family: var(--font-body);
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+
+#stage {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+/* A single scanline veil. Cheap, and it glues the DOM layer to the WebGL
+   layer so the text doesn't look pasted on. */
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 50;
+  background: repeating-linear-gradient(
+    to bottom,
+    rgba(0, 0, 0, 0) 0 2px,
+    rgba(0, 0, 0, 0.16) 2px 3px
+  );
+  mix-blend-mode: multiply;
+  opacity: 0.5;
+}
+
+/* the beat kick — deliberately tiny, it should be felt not seen */
+@keyframes kick {
+  from {
+    opacity: 0.09;
+  }
+  to {
+    opacity: 0;
+  }
+}
+body.kick::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: 49;
+  pointer-events: none;
+  background: radial-gradient(ellipse at 50% 62%, var(--yellow), transparent 62%);
+  animation: kick 0.18s linear forwards;
+}
+
+/* ------------------------------------------------------------------ boot */
+
+#boot {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: grid;
+  place-items: center;
+  background: radial-gradient(ellipse at 50% 55%, #150c2b 0%, #05030d 70%);
+  transition: opacity 0.8s ease, transform 0.8s ease;
+}
+#boot.is-gone {
+  opacity: 0;
+  transform: scale(1.06);
+  pointer-events: none;
+}
+.boot-inner {
+  display: grid;
+  justify-items: center;
+  gap: 22px;
+  text-align: center;
+}
+
+/* a Poké Ball, in CSS, because of course */
+.boot-ball {
+  width: 76px;
+  height: 76px;
+  border-radius: 50%;
+  border: 3px solid var(--ink);
+  background: linear-gradient(var(--red) 0 47%, var(--ink) 47% 53%, var(--paper) 53% 100%);
+  position: relative;
+  animation: spin 1.4s cubic-bezier(0.6, 0, 0.4, 1) infinite;
+  box-shadow: 0 0 34px rgba(238, 21, 21, 0.55);
+}
+.boot-ball i {
+  position: absolute;
+  inset: 50% auto auto 50%;
+  translate: -50% -50%;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 3px solid var(--ink);
+  background: var(--paper);
+}
+@keyframes spin {
+  0%,
+  100% {
+    rotate: 0deg;
+  }
+  50% {
+    rotate: 180deg;
+  }
+}
+#boot.is-ready .boot-ball {
+  animation-duration: 0.7s;
+}
+
+.boot-status {
+  margin: 0;
+  font-family: var(--font-pixel);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  color: var(--cyan);
+  text-transform: uppercase;
+}
+
+.boot-btn {
+  font-family: var(--font-display);
+  font-size: clamp(16px, 3.6vw, 26px);
+  padding: 16px 30px;
+  color: var(--ink);
+  background: var(--yellow);
+  border: 3px solid var(--ink);
+  border-radius: 999px;
+  box-shadow: 5px 5px 0 var(--ink);
+  cursor: pointer;
+  transition: transform 0.12s ease, box-shadow 0.12s ease, opacity 0.3s ease;
+}
+.boot-btn:disabled {
+  opacity: 0.3;
+  cursor: wait;
+}
+.boot-btn:not(:disabled):hover {
+  transform: translate(-2px, -2px);
+  box-shadow: 8px 8px 0 var(--ink);
+}
+.boot-btn:not(:disabled):active {
+  transform: translate(3px, 3px);
+  box-shadow: 1px 1px 0 var(--ink);
+}
+.boot-note {
+  margin: 0;
+  font-size: 12px;
+  opacity: 0.55;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+/* -------------------------------------------------------------------- ui */
+
+#ui {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  pointer-events: none;
+}
+
+.reveal {
+  opacity: 0;
+  translate: 0 14px;
+  filter: blur(6px);
+  transition: opacity 1s ease, translate 1s cubic-bezier(0.2, 0.9, 0.2, 1),
+    filter 1s ease;
+}
+#ui.is-revealed .reveal {
+  opacity: 1;
+  translate: 0 0;
+  filter: blur(0);
+}
+#ui.is-revealed .bar {
+  transition-delay: 0.35s;
+}
+
+/* ----------------------------------------------------------------- brand */
+
+.wordmark {
+  position: absolute;
+  top: clamp(20px, 4vw, 44px);
+  left: 50%;
+  translate: -50% 14px;
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: clamp(30px, 6.4vw, 72px);
+  line-height: 0.9;
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+  transform: skewX(-7deg);
+  color: var(--yellow);
+  /* stacked outline + drop, the Gen-1 logo trick */
+  text-shadow: -2px 0 var(--ink), 2px 0 var(--ink), 0 -2px var(--ink), 0 2px var(--ink),
+    4px 4px 0 var(--blue), 8px 8px 0 rgba(0, 0, 0, 0.5);
+}
+#ui.is-revealed .wordmark {
+  translate: -50% 0;
+}
+
+/* ------------------------------------------------------------------- bar */
+
+.bar {
+  position: absolute;
+  left: 50%;
+  bottom: clamp(24px, 5vw, 48px);
+  translate: -50% 14px;
+  display: flex;
+  align-items: stretch;
+  gap: 10px;
+}
+#ui.is-revealed .bar {
+  translate: -50% 0;
+}
+
+.glass {
+  pointer-events: auto;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: 52px;
+  padding: 0 18px;
+  font: inherit;
+  color: var(--paper);
+  text-decoration: none;
+  cursor: pointer;
+
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-edge);
+  border-radius: 16px;
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  /* outer lift + the thin inner highlight that sells it as glass */
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.28),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.06);
+  transition: background 0.22s ease, border-color 0.22s ease, transform 0.22s ease,
+    box-shadow 0.22s ease;
+}
+.glass:hover {
+  background: var(--glass-bg-hover);
+  border-color: rgba(255, 255, 255, 0.4);
+  transform: translateY(-2px);
+}
+.glass:active {
+  transform: translateY(0);
+}
+.glass:focus-visible {
+  outline: 2px solid var(--cyan);
+  outline-offset: 3px;
+}
+
+.ca-tag {
+  font-family: var(--font-pixel);
+  font-size: 8px;
+  letter-spacing: 0.1em;
+  color: var(--yellow);
+  opacity: 0.85;
+}
+.ca-val {
+  font-family: ui-monospace, 'SF Mono', 'Courier New', monospace;
+  font-size: 14px;
+  letter-spacing: 0.02em;
+}
+.ca-act {
+  font-family: var(--font-pixel);
+  font-size: 8px;
+  letter-spacing: 0.08em;
+  padding: 5px 8px;
+  border-radius: 8px;
+  color: rgba(253, 251, 243, 0.75);
+  background: rgba(255, 255, 255, 0.09);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+}
+.ca.is-idle {
+  cursor: default;
+}
+.ca.is-idle:hover {
+  transform: none;
+  background: var(--glass-bg);
+  border-color: var(--glass-edge);
+}
+.ca.is-idle .ca-val {
+  opacity: 0.6;
+}
+.ca.is-copied {
+  border-color: rgba(92, 255, 143, 0.6);
+}
+.ca.is-copied .ca-act {
+  color: #0a0616;
+  background: #5cff8f;
+  border-color: transparent;
+}
+/* clipboard unavailable: show the whole address, selectable in one gesture */
+.ca.is-failed {
+  border-color: rgba(255, 203, 5, 0.55);
+}
+.ca.is-failed .ca-val {
+  user-select: all;
+  -webkit-user-select: all;
+  font-size: 11px;
+  letter-spacing: 0;
+}
+
+.glass.icon {
+  width: 52px;
+  padding: 0;
+  justify-content: center;
+}
+.glass.icon svg {
+  width: 20px;
+  height: 20px;
+  display: block;
+}
+
+/* sound button: the slash only exists when muted */
+.slash {
+  opacity: 0;
+  transition: opacity 0.18s ease;
+}
+body.is-muted .slash {
+  opacity: 1;
+}
+body.is-muted .wave {
+  opacity: 0;
+}
+.wave {
+  transition: opacity 0.18s ease;
+}
+
+/* --------------------------------------------------------------- smaller */
+
+@media (max-width: 560px) {
+  .glass {
+    height: 46px;
+    padding: 0 14px;
+  }
+  .glass.icon {
+    width: 46px;
+  }
+  .ca-val {
+    font-size: 12px;
+  }
+  .bar {
+    gap: 8px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .boot-ball {
+    animation: none;
+  }
+  .reveal {
+    transition-duration: 0.01s;
+  }
+  body.kick::before {
+    display: none;
+  }
+}
