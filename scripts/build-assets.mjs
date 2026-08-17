@@ -47,13 +47,32 @@ const meta = await sharp(trimmed).metadata();
 await sharp(trimmed).resize({ width: 1100 }).webp({ quality: 92 }).toFile(path.join(outBrand, 'logo.webp'));
 await sharp(trimmed).resize({ width: 1100 }).png({ compressionLevel: 9 }).toFile(path.join(outBrand, 'logo.png'));
 
-// Favicon: the wordmark is far too wide to read as a square, so crop the
-// leading glyphs — that reads at 16px where the full lockup would not.
-await sharp(trimmed)
-  .extract({ left: 0, top: 0, width: meta.height, height: meta.height })
-  .resize(256, 256, { fit: 'contain', background: { r: 0, g: 0, b: 0, alpha: 0 } })
-  .png()
-  .toFile(path.join(outBrand, 'favicon.png'));
+/**
+ * Favicon. The wordmark is 3:1, so any square crop of it is either a couple of
+ * letters or a lot of empty space — it never sits right in a tab. A character
+ * portrait does: at 16px you read the silhouette and the colour, which is all a
+ * favicon ever gets to say.
+ *
+ * Crop is in source pixels against a 1600x900 still, framed on the head so the
+ * ears and cheeks survive the downscale.
+ */
+const FAVICON = {
+  src: path.join(srcImages, 'pikadigley.png'),
+  crop: { left: 660, top: 135, width: 500, height: 500 },
+};
+
+for (const [name, size] of [
+  ['favicon.png', 256],
+  ['apple-touch-icon.png', 180],
+]) {
+  await sharp(FAVICON.src)
+    .extract(FAVICON.crop)
+    .resize(size, size, { fit: 'cover' })
+    // small sizes lose the ear tips and cheek edges without a nudge
+    .sharpen({ sigma: 0.8 })
+    .png({ compressionLevel: 9 })
+    .toFile(path.join(outBrand, name));
+}
 
 /**
  * Share card. Social scrapers want a fixed 1.91:1 image — handing them the bare
@@ -75,7 +94,7 @@ await sharp({
   .png({ compressionLevel: 9 })
   .toFile(path.join(outBrand, 'og.png'));
 
-for (const f of ['logo.webp', 'logo.png', 'favicon.png', 'og.png']) {
+for (const f of ['logo.webp', 'logo.png', 'favicon.png', 'apple-touch-icon.png', 'og.png']) {
   console.log(`brand/${f}: ${kb((await fs.stat(path.join(outBrand, f))).size)}`);
 }
 console.log(`logo trimmed to ${meta.width}x${meta.height}`);

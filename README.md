@@ -142,8 +142,13 @@ npm run assets
 - **Posters** — sources are 1.5–3 MB each and only ever cover a few hundred
   pixels on screen, so they're resized to 640px webp. 24 MB → 313 KB.
 - **Logo** — trims the transparent margin off the source wordmark, then emits
-  `logo.webp` (70 KB), a `logo.png` fallback, and a favicon cropped to the
-  leading glyphs, because the full lockup is unreadable at 16px.
+  `logo.webp` (70 KB) and a `logo.png` fallback.
+- **Share card** — a 1200×630 `og.png` with the wordmark on the club background.
+  Social scrapers letterbox anything that isn't ~1.91:1, and the bare wordmark
+  is 3:1 and transparent, so it lands on whatever colour the client picks.
+- **Favicon** — a square crop of a character portrait, not the wordmark. The
+  logo is 3:1, so every square crop of it is either two letters or mostly empty
+  space. Change which image and where it crops via `FAVICON` in the script.
 
 Re-run it after changing `POSTERS` or the logo art.
 
