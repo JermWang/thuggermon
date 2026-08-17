@@ -39,7 +39,13 @@ export function createUI() {
   const bootBtn = boot.querySelector('.boot-btn');
   const bootStatus = boot.querySelector('.boot-status');
 
-  const brand = el('h1', 'wordmark reveal', COPY.wordmark);
+  // Official wordmark. <picture> keeps a PNG fallback for the handful of
+  // clients that still don't take webp; alt carries the name for screen readers.
+  const brand = el('h1', 'wordmark reveal');
+  brand.innerHTML = `<picture>
+      <source srcset="/brand/logo.webp" type="image/webp">
+      <img src="/brand/logo.png" alt="${COPY.wordmark}" width="1100" height="363" decoding="async">
+    </picture>`;
   root.appendChild(brand);
 
   const bar = el('nav', 'bar reveal');

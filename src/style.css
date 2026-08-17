@@ -205,20 +205,20 @@ body.kick::before {
 
 .wordmark {
   position: absolute;
-  top: clamp(20px, 4vw, 44px);
+  top: clamp(16px, 3.4vw, 40px);
   left: 50%;
   translate: -50% 14px;
   margin: 0;
-  font-family: var(--font-display);
-  font-size: clamp(30px, 6.4vw, 72px);
-  line-height: 0.9;
-  letter-spacing: -0.01em;
-  white-space: nowrap;
-  transform: skewX(-7deg);
-  color: var(--yellow);
-  /* stacked outline + drop, the Gen-1 logo trick */
-  text-shadow: -2px 0 var(--ink), 2px 0 var(--ink), 0 -2px var(--ink), 0 2px var(--ink),
-    4px 4px 0 var(--blue), 8px 8px 0 rgba(0, 0, 0, 0.5);
+  width: clamp(240px, 38vw, 520px);
+  line-height: 0;
+}
+.wordmark img {
+  display: block;
+  width: 100%;
+  height: auto;
+  /* the artwork carries its own outline, so this is just lift off the scene */
+  filter: drop-shadow(0 6px 18px rgba(0, 0, 0, 0.65))
+    drop-shadow(0 0 26px rgba(255, 203, 5, 0.25));
 }
 #ui.is-revealed .wordmark {
   translate: -50% 0;

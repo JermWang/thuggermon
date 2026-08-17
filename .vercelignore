@@ -1,0 +1,7 @@
+# Source art and tooling are not needed to build the site — only the baked
+# output in Public/ is. Keeps ~90MB off every deployment upload.
+assets/
+scripts/
+.shots/
+.claude/
+README.md

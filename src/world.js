@@ -45,6 +45,12 @@ export async function createWorld(scene, renderer) {
   const sparks = buildSparks(scene, glow, haze);
   const ball = await buildDiscoBall(scene, renderer, glow, haze);
 
+  // Give the booth's metalwork something to reflect.
+  for (const mat of parts.metalMats) {
+    mat.envMap = ball.envMap;
+    mat.needsUpdate = true;
+  }
+
   /**
    * The Reflector re-renders the whole scene from a mirrored camera. Additive,
    * depth-write-free haze does not survive that second pass intact — it comes
@@ -188,7 +194,15 @@ function buildRoom(scene, parts) {
 
   const body = new THREE.Mesh(
     new THREE.BoxGeometry(DECK_W, DECK_Y, DECK_D),
-    new THREE.MeshStandardMaterial({ color: 0x161232, roughness: 0.6, metalness: 0.45 })
+    // Brushed dark metal. Metalness stays under 1 so the base colour still
+    // contributes — a fully metallic surface in a dark room reflects nothing
+    // and renders black.
+    new THREE.MeshStandardMaterial({
+      color: 0x3a3658,
+      roughness: 0.38,
+      metalness: 0.75,
+      envMapIntensity: 2.0,
+    })
   );
   body.position.set(0, DECK_Y / 2, DECK_Z); // centred, so it sits exactly on y=0
   body.castShadow = true;
@@ -197,7 +211,14 @@ function buildRoom(scene, parts) {
 
   const top = new THREE.Mesh(
     new THREE.BoxGeometry(DECK_W + 0.12, 0.1, DECK_D + 0.12),
-    new THREE.MeshStandardMaterial({ color: 0x241c4a, roughness: 0.45, metalness: 0.6 })
+    // Polished chrome worktop. envMapIntensity is pushed hard because the only
+    // thing there is to reflect is a dim club.
+    new THREE.MeshStandardMaterial({
+      color: 0xc8d0e2,
+      roughness: 0.2,
+      metalness: 0.85,
+      envMapIntensity: 3.5,
+    })
   );
   top.position.set(0, DECK_Y + 0.05, DECK_Z);
   top.castShadow = true;
@@ -234,6 +255,9 @@ function buildRoom(scene, parts) {
   scene.add(decks);
   /** Where the DJ's hands need to land, in world space. */
   parts.deckAnchor = { y: DECK_Y + 0.16, z: DECK_Z, dx: PLATTER_DX };
+  // Metal needs something to reflect; createWorld hands these the disco ball's
+  // cube map once it exists, otherwise they render as flat black slabs.
+  parts.metalMats = [body.material, top.material];
   parts.decks = decks;
   parts.platters = platters;
 }
@@ -361,6 +385,13 @@ function buildLights(scene, haze) {
   core.position.set(0, BALL_Y, 0);
   scene.add(core);
 
+  // A dedicated cool spot on the booth. Without it the DJ sits in the darkest
+  // part of the room — the movers all sweep the dancefloor, not the back wall.
+  const booth = new THREE.SpotLight(0xcfe4ff, 6, 16, 0.42, 0.7, 1.2);
+  booth.position.set(0, 5.2, DJ_Z + 2.6);
+  booth.target.position.set(0, 0.9, DJ_Z);
+  scene.add(booth, booth.target);
+
   const _dir = new THREE.Vector3();
   const _up = new THREE.Vector3(0, 1, 0);
 
@@ -370,6 +401,8 @@ function buildLights(scene, haze) {
       const p = env.power;
       key.intensity = lerp(6, 22, p) * (0.85 + 0.2 * hit);
       core.intensity = p * (9 + 7 * hit);
+      // breathes with the beat, but never drops out — the booth stays readable
+      booth.intensity = p * (5 + 2 * hit);
 
       movers.forEach((m, i) => {
         // Lissajous sweep, both periods divide the loop, so it repeats cleanly
@@ -394,7 +427,7 @@ function buildLights(scene, haze) {
 /* ------------------------------------------------------------ disco ball -- */
 
 async function buildDiscoBall(scene, renderer, glowTex, haze) {
-  const gltf = await new GLTFLoader().loadAsync('models/disco_ball.glb');
+  const gltf = await new GLTFLoader().loadAsync('/models/disco_ball.glb');
   const model = gltf.scene;
 
   const box = new THREE.Box3().setFromObject(model);
@@ -502,6 +535,7 @@ async function buildDiscoBall(scene, renderer, glowTex, haze) {
   return {
     group: ballGroup,
     rig,
+    envMap: cubeRT.texture,
     update(t, g, env, frame) {
       // The ball drops in on its chain and overshoots once. elasticOut is
       // exactly 1 from t = 2.35s onward, so it is dead still long before the
@@ -547,7 +581,7 @@ async function buildDiscoBall(scene, renderer, glowTex, haze) {
 function buildPosters(scene) {
   const loader = new THREE.TextureLoader();
   const textures = POSTERS.map((_, i) => {
-    const tex = loader.load(`posters/poster-${String(i).padStart(2, '0')}.webp`);
+    const tex = loader.load(`/posters/poster-${String(i).padStart(2, '0')}.webp`);
     tex.colorSpace = THREE.SRGBColorSpace;
     return tex;
   });
@@ -629,7 +663,7 @@ function buildJumbotron(scene) {
   // Until the video has actually decoded a frame, show a still instead — an
   // un-started video texture is pure black, which is a big dead rectangle
   // hanging over the back of the room.
-  const stillTex = new THREE.TextureLoader().load('posters/poster-00.webp');
+  const stillTex = new THREE.TextureLoader().load('/posters/poster-00.webp');
   stillTex.colorSpace = THREE.SRGBColorSpace;
 
   // Swap to the video only once a real frame has been presented. Anything

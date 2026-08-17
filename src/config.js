@@ -81,7 +81,7 @@ export const POSTERS = [
   'kingpin.jpeg',
 ];
 
-export const JUMBOTRON_VIDEO = 'videos/Purple_creature_performs_backflip_202608141724.mp4';
+export const JUMBOTRON_VIDEO = '/videos/Purple_creature_performs_backflip_202608141724.mp4';
 
 /** ---------------------------------------------------------------------
  *  The whole site. Two controls and a wordmark — the party is the page.

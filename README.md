@@ -124,17 +124,60 @@ Each dancer gets a whole-beat phase offset: same grid, not lockstep.
 | --- | --- |
 | **Contract address** | `TOKEN.contract` in `src/config.js` |
 | **X / socials link** | `SOCIAL.x` in `src/config.js` |
-| Wordmark and the enter-button label | `COPY` in `src/config.js` |
+| Enter-button label, logo alt text | `COPY` in `src/config.js` |
+| Logo art | `assets/thuggermon-logo.png`, then `npm run assets` |
 | Tempo, loop length, intro length, crew size | top of `src/config.js` |
 | The track, where it starts, its volume | `MUSIC` in `src/config.js` |
-| Which images go on the club walls | `POSTERS` in `src/config.js`, then `node scripts/build-posters.mjs` |
+| Which images go on the club walls | `POSTERS` in `src/config.js`, then `npm run assets` |
 | Dance moves | `src/dance.js` |
 | Lighting, floor, ball, posters | `src/world.js` |
 | Bloom / grain / vignette | `src/main.js`, `src/grain.js` |
 
-`scripts/build-posters.mjs` bakes the wall textures: the source images are
-1.5–3 MB each and only ever cover a few hundred pixels on screen, so it resizes
-them to 640px webp. That's 24 MB → 313 KB. Re-run it after changing `POSTERS`.
+```bash
+npm run assets
+```
+
+`scripts/build-assets.mjs` bakes everything deployable out of `assets/`:
+
+- **Posters** — sources are 1.5–3 MB each and only ever cover a few hundred
+  pixels on screen, so they're resized to 640px webp. 24 MB → 313 KB.
+- **Logo** — trims the transparent margin off the source wordmark, then emits
+  `logo.webp` (70 KB), a `logo.png` fallback, and a favicon cropped to the
+  leading glyphs, because the full lockup is unreadable at 16px.
+
+Re-run it after changing `POSTERS` or the logo art.
+
+## Layout
+
+```
+assets/     source art — in the repo, NOT deployed (~91 MB)
+Public/     baked output — this is what ships (~10 MB)
+src/        the site
+scripts/    asset baking
+```
+
+The split matters: `Public/` is Vite's `publicDir`, so everything in it is
+copied verbatim into `dist/` and uploaded on every deploy. The 2–3 MB source
+stills have no business being there — only the 640px bakes do.
+
+## Deploying (Vercel)
+
+Import the GitHub repo and it should just work — `vercel.json` pins the
+framework, build command and output directory, and adds immutable cache headers
+for the models, posters, video and audio.
+
+Two things that were fixed to make that true, worth not regressing:
+
+- **Asset URLs are absolute** (`/models/pikachu.glb`, not `models/…`). Relative
+  paths resolve against the current route, so they break on any URL that isn't
+  exactly `/`.
+- **`publicDir` is `'Public'` with a capital P** to match the folder on disk.
+  Vercel builds on a case-sensitive filesystem, so a lowercase `public` here
+  builds fine on Windows and silently ships an empty site on Linux.
+
+`.vercelignore` keeps `assets/` and `scripts/` out of the upload, and `sharp` is
+an optional dependency — it's only needed for `npm run assets`, never for the
+build, so a native-install failure can't take the deploy down.
 
 ## The page
 

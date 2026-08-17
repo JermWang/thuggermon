@@ -21,7 +21,7 @@ const MATERIALISE_DUR = 0.55;
  * Normalising here (rather than per-dancer) means the fix-ups are paid once.
  */
 async function loadTemplate() {
-  const gltf = await new GLTFLoader().loadAsync('models/pikachu.glb');
+  const gltf = await new GLTFLoader().loadAsync('/models/pikachu.glb');
   const raw = gltf.scene;
 
   raw.updateWorldMatrix(true, true);
