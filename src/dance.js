@@ -117,35 +117,45 @@ function poseChain(rig, chain, x, y, z, falloff = 0.65, mirror = false) {
  *     z = -70  ->  y = -80  keeps hand x 0.26   (negative now abducts; tightest)
  *     z = -95  ->  y = -80  keeps hand x 0.34
  *
- * Crucially there is a DEAD BAND between about -50 and -75 where no abduction
- * clears the belly — the best available there is ~0.19, still inside. It cannot
- * be solved by choosing a better angle, so the arm must not linger in it: the
- * raise is reshaped to cross the band quickly and sit on one side or the other.
- * A dance move that snaps reads as choreography anyway.
+ * The limit was measured against the ACTUAL SKINNED MESH, not a proxy: paw and
+ * forearm vertices tested against the torso's real surface (nearest torso
+ * vertex + its skinned normal), swept across the whole (raise x abduction)
+ * space, and repeated under the torso poses every style produces — because the
+ * arms hang off the spine while `hips` rotates independently, so the belly
+ * swings relative to the arm.
+ *
+ * Two findings drove this:
+ *   - Past about -35 deg of raise there is NO abduction that keeps the paw out.
+ *     The shoulder joint sits *inside* the torso, so lifting sweeps the arm
+ *     through the belly whichever way it is swung.
+ *   - Testing the wrist JOINT is not enough. It stays clear while the paw mesh
+ *     around it does not, which is why earlier attempts still glitched.
+ *
+ * So raise is capped hard and the expressive range lives in abduction, which
+ * stays ~65-75 deg wide. Arms swing rather than lift.
+ *
+ * Measured safe window (margin 0.01), holding across all four styles:
+ *     raise -30 -> abduction [ 10, 45]      raise -15 -> [-30, 45]
+ *     raise -25 -> [-20, 45]                raise -10 -> [-35, 45]
+ *     raise -20 -> [-25, 45]                raise   0 -> [-35, 45]
+ *     raise -35 -> nothing is safe
  */
-const ARM_Z_MIN = -110;
-const ARM_Z_MAX = 10;
-const BAND_HI = -50; // above this (less raised) the low pose is clean
-const BAND_LO = -75; // below this the high pose is clean
+const ARM_Z_MIN = -30;
+const ARM_Z_MAX = 5;
 
-/** Push the raise out of the unclearable middle, spending as little time there as possible. */
-function shapeRaise(z) {
-  if (z >= BAND_HI || z <= BAND_LO) return z;
-  const t = (BAND_HI - z) / (BAND_HI - BAND_LO);
-  return lerp(BAND_HI, BAND_LO, smoothstep(0.4, 0.6, t));
+/** The table above as a curve, kept a few degrees inside the measured edge. */
+function armYWindow(z) {
+  return [Math.min(12, -35 + 2.5 * Math.max(0, -z - 12)), 40];
 }
 
-const armAbduction = (z) => lerp(20, -80, smoothstep(BAND_HI, BAND_LO, z));
-
 /**
- * Pose an arm by how far it is raised; abduction follows automatically so the
- * hand always travels around the torso rather than through it. `yExtra` is a
- * stylistic nudge on top, deliberately bounded so no style can reintroduce the
- * collision.
+ * Pose an arm. Both raise and abduction are clamped into the measured safe
+ * region, so no style — present or future — can push the paw into the body.
  */
-function poseArm(rig, chain, z, yExtra = 0, falloff = 0.7, mirror = false) {
-  const zs = shapeRaise(clamp(z, ARM_Z_MIN, ARM_Z_MAX));
-  poseChain(rig, chain, 0, armAbduction(zs) + clamp(yExtra, -18, 18), zs, falloff, mirror);
+function poseArm(rig, chain, z, y, falloff = 0.7, mirror = false) {
+  const zc = clamp(z, ARM_Z_MIN, ARM_Z_MAX);
+  const [lo, hi] = armYWindow(zc);
+  poseChain(rig, chain, 0, clamp(y, lo, hi), zc, falloff, mirror);
 }
 
 export const STYLES = ['BOUNCE', 'SHUFFLE', 'WAVE', 'SPIN'];
@@ -229,11 +239,11 @@ export function applyDance(rig, g, opts) {
       pose(rig, B.spine2, 0, -4 * sway * E, -5 * hit * E);
       pose(rig, B.head, 0, 12 * sway * E, -14 * hit * E);
 
-      // arms pump in opposition, one full cycle every two beats
-      const up = 55 + 40 * swing;
-      const dn = 55 - 40 * swing;
-      poseArm(rig, B.armL, -up * E, 0, 0.7);
-      poseArm(rig, B.armR, -dn * E, 0, 0.7, true);
+      // arms pump in opposition — as a forward/back swing, since lift is capped
+      const sw = 30 * swing;
+      const rz = -10 - 6 * hit; // shallow, so the abduction window stays wide
+      poseArm(rig, B.armL, rz * E, (6 + sw) * E, 0.7);
+      poseArm(rig, B.armR, rz * E, (6 - sw) * E, 0.7, true);
 
       // knees absorb the landing
       const squat = 26 * hit * E;
@@ -258,10 +268,9 @@ export function applyDance(rig, g, opts) {
       pose(rig, B.spine2, 0, -8 * slide * E, -4 * hit2 * E);
       pose(rig, B.head, 0, 6 * o(4) * E, -8 * hit2 * E);
 
-      // falloff stays at 0.7 (where the abduction was calibrated) — a tighter
-      // chain under-rotates the forearm and drags the paw back into the belly
-      poseArm(rig, B.armL, -85 * E, -12 * slide * E, 0.7);
-      poseArm(rig, B.armR, -85 * E, 12 * slide * E, 0.7, true);
+      // falloff stays at 0.7 — the safe window was measured at that value
+      poseArm(rig, B.armL, -12 * E, (6 - 28 * slide) * E, 0.7);
+      poseArm(rig, B.armR, -12 * E, (6 + 28 * slide) * E, 0.7, true);
 
       poseChain(rig, B.legL, 0, 0, 20 + 26 * Math.max(0, slide) * E, 0.85);
       poseChain(rig, B.legR, 0, 0, 20 + 26 * Math.max(0, -slide) * E, 0.85, true);
@@ -291,8 +300,8 @@ export function applyDance(rig, g, opts) {
       const rip = (i) => Math.sin((TAU * (g.beats - offset - i * 0.5)) / 4);
       const a = rip(0) * E;
       const b = rip(2) * E;
-      poseArm(rig, B.armL, -60 - 30 * a, -12 * a, 0.7);
-      poseArm(rig, B.armR, -60 - 30 * b, -12 * b, 0.7, true);
+      poseArm(rig, B.armL, (-14 - 10 * a) * E, (4 + 30 * a) * E, 0.7);
+      poseArm(rig, B.armR, (-14 - 10 * b) * E, (4 + 30 * b) * E, 0.7, true);
 
       poseChain(rig, B.legL, 0, 0, 12 + 8 * o(4) * E, 0.9);
       poseChain(rig, B.legR, 0, 0, 12 - 8 * o(4) * E, 0.9, true);
@@ -314,9 +323,9 @@ export function applyDance(rig, g, opts) {
       pose(rig, B.spine2, 0, 0, -10 * hit * E);
       pose(rig, B.head, 0, -18 * o(8) * E, -8 * hit * E);
 
-      // arms out wide like a spinning skater
-      poseArm(rig, B.armL, -95 * E, 0, 0.55);
-      poseArm(rig, B.armR, -95 * E, 0, 0.55, true);
+      // arms swept back and out, like a spinning skater
+      poseArm(rig, B.armL, -26 * E, 34 * E, 0.7);
+      poseArm(rig, B.armR, -26 * E, 34 * E, 0.7, true);
 
       poseChain(rig, B.legL, 0, 0, 16 * hit * E, 0.9);
       poseChain(rig, B.legR, 0, 0, 40 + 20 * hit * E, 0.9, true);
