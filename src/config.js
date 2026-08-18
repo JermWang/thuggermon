@@ -97,7 +97,7 @@ export const TOKEN = {
    * shows a "coming soon" state and copying is disabled, so the page never
    * offers an address that isn't real.
    */
-  contract: 'H9ySchW5ftaXdHNF8iWGgKunfzQ95HrmwNLkdhQTpump',
+  contract: '5ZNcV7BEe5fvmCpXvLExGN4oCtGZzTeswaDbSuWJpump',
   /** Shown on the button; the full address is what actually gets copied. */
   label: 'CA',
 };
